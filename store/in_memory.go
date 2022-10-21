@@ -1,21 +1,26 @@
 package store
 
-import "github.com/sonyamoonglade/authio/internal/session"
+import "github.com/sonyamoonglade/authio/session"
 
 //In memory implementation of store.Store
-
 type InMemoryStore struct {
 	data             map[string]string
-	maxItems         int
 	currItems        int
+	maxItems         int
 	overflowStrategy OverflowStrategy
 }
 
-func (i *InMemoryStore) Save(ID string, v session.SessionValue) error {
-	if i.currItems >= i.maxItems {
-		panic("implement LRU")
+func NewInMemoryStore(cfg *Config, maxItems int) *InMemoryStore {
+	return &InMemoryStore{
+		data:             make(map[string]string),
+		currItems:        0,
+		overflowStrategy: cfg.OverflowStrategy,
+		maxItems:         maxItems,
 	}
+}
 
+func (i *InMemoryStore) Save(ID string, v session.SessionValue) error {
+	//todo: setup limits
 	i.data[ID] = v.String()
 	i.currItems += 1
 	return nil
@@ -37,6 +42,8 @@ func (i *InMemoryStore) Get(ID string) (session.SessionValue, error) {
 	if !ok {
 		return nil, ErrEntryDoesNotExist
 	}
+	_ = v
+	panic("implement")
 
 }
 
