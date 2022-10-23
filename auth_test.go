@@ -23,7 +23,9 @@ func TestCanBuildAuth(t *testing.T) {
 			EntryTTL:         time.Hour * 24,
 			OverflowStrategy: store.LRU,
 			ParseFunc:        store.ToInt64,
-		}, 100)).
+		}, &store.InMemoryConfig{
+			MaxItems: int64(100),
+		})).
 		Build()
 
 	require.NotNil(t, auth)
@@ -31,5 +33,33 @@ func TestCanBuildAuth(t *testing.T) {
 	require.NotNil(t, auth.logger)
 	require.NotNil(t, auth.store)
 	require.NotNil(t, auth.settings[cookies.DefaultLabel])
+
 	require.Nil(t, auth.settings["jo-mama"])
+}
+
+func TestCanBuildWithDefaultLogger(t *testing.T) {
+
+	auth := NewAuthBuilder().
+		UseLogger(nil). // <---
+		UseStore(store.NewInMemoryStore(&store.Config{
+			EntryTTL:         time.Hour * 24,
+			OverflowStrategy: store.LRU,
+			ParseFunc:        store.ToInt64,
+		}, &store.InMemoryConfig{
+			MaxItems: int64(100),
+		})).
+		Build()
+
+	require.NotNil(t, auth.logger)
+
+}
+
+func TestCantBuildWithoutStore(t *testing.T) {
+	builder := NewAuthBuilder().
+		UseLogger(nil) // <---
+
+	require.Panics(t, func() {
+		builder.Build()
+	})
+
 }

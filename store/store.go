@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrEntryDoesNotExist = errors.New("entry does not exist")
+	ErrNoEntry = errors.New("entry does not exist")
 )
 
 type OverflowStrategy int
@@ -41,4 +41,8 @@ func ToInt64(v string) (session.SessionValue, error) {
 	}
 
 	return session.FromInt64(parsed), nil
+}
+
+func ToString(v string) (session.SessionValue, error) {
+	return session.FromString(v), nil
 }

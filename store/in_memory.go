@@ -5,22 +5,31 @@ import "github.com/sonyamoonglade/authio/session"
 //In memory implementation of store.Store
 type InMemoryStore struct {
 	data             map[string]string
-	currItems        int
-	maxItems         int
+	maxItems         int64
+	currItems        int64
 	overflowStrategy OverflowStrategy
+	parseFunc        ParseFromStoreFunc
 }
 
-func NewInMemoryStore(cfg *Config, maxItems int) *InMemoryStore {
+type InMemoryConfig struct {
+	MaxItems int64
+}
+
+func NewInMemoryStore(cfg *Config, inMemoryCfg *InMemoryConfig) *InMemoryStore {
 	return &InMemoryStore{
 		data:             make(map[string]string),
+		maxItems:         inMemoryCfg.MaxItems,
 		currItems:        0,
+		parseFunc:        cfg.ParseFunc,
 		overflowStrategy: cfg.OverflowStrategy,
-		maxItems:         maxItems,
 	}
 }
 
 func (i *InMemoryStore) Save(ID string, v session.SessionValue) error {
-	//todo: setup limits
+	if i.currItems == i.maxItems {
+		panic("LRU!!")
+	}
+
 	i.data[ID] = v.String()
 	i.currItems += 1
 	return nil
@@ -29,7 +38,7 @@ func (i *InMemoryStore) Save(ID string, v session.SessionValue) error {
 func (i *InMemoryStore) Delete(ID string) error {
 	_, ok := i.data[ID]
 	if !ok {
-		return ErrEntryDoesNotExist
+		return ErrNoEntry
 	}
 
 	delete(i.data, ID)
@@ -38,15 +47,10 @@ func (i *InMemoryStore) Delete(ID string) error {
 }
 
 func (i *InMemoryStore) Get(ID string) (session.SessionValue, error) {
-	v, ok := i.data[ID]
+	stringValue, ok := i.data[ID]
 	if !ok {
-		return nil, ErrEntryDoesNotExist
+		return nil, ErrNoEntry
 	}
-	_ = v
-	panic("implement")
 
-}
-
-func (i *InMemoryStore) UseConfig(config *Config) {
-	panic("not implemented") // TODO: Implement
+	return i.parseFunc(stringValue)
 }

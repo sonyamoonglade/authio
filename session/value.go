@@ -15,3 +15,13 @@ func (i Int64SessionValue) String() string {
 func FromInt64(i int64) SessionValue {
 	return Int64SessionValue(i)
 }
+
+type StringSessionValue string
+
+func (s StringSessionValue) String() string {
+	return string(s)
+}
+
+func FromString(s string) SessionValue {
+	return StringSessionValue(s)
+}

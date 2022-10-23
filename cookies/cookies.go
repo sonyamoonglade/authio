@@ -1,11 +1,12 @@
 package cookies
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/sonyamoonglade/authio/gcmcrypt"
-	"github.com/sonyamoonglade/authio/session"
+	"github.com/sonyamoonglade/authio/hash"
 )
 
 var (
@@ -25,23 +26,37 @@ var DefaultSetting = &Setting{
 	Label:    DefaultLabel,
 }
 
+var (
+	ErrCookieTooLong = errors.New("can not set cookie with 4096 or more lenght")
+)
+
 type Setting struct {
 	Label    string
+	Name     string
+	Path     string
+	Domain   string
+	Secret   [16]byte
 	Signed   bool
-	Secret   string
 	HttpOnly bool
 	Secure   bool
 	SameSite http.SameSite
 	Expires  time.Time
-	Path     string
-	Domain   string
-	Name     string
 }
 
-func write(w http.ResponseWriter, setting *Setting, session *session.AuthSession) {
+func write(w http.ResponseWriter, setting *Setting, cookieValue string) error {
+
+	if len(cookieValue) > 2<<11 { //4096
+		return ErrCookieTooLong
+	}
+
+	//Hash the value if cookie is not signed
+	if setting.Signed == false {
+		cookieValue = hash.SHA1(cookieValue)
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     setting.Name,
-		Value:    session.SignedID, //pay attention that SignedID is set to http cookie not ID!
+		Value:    cookieValue,
 		Path:     setting.Path,
 		Domain:   setting.Domain,
 		Expires:  setting.Expires,
@@ -49,30 +64,42 @@ func write(w http.ResponseWriter, setting *Setting, session *session.AuthSession
 		HttpOnly: setting.HttpOnly,
 		SameSite: setting.SameSite,
 	})
-}
-
-func writeSigned(w http.ResponseWriter, setting *Setting, session *session.AuthSession) error {
-
-	//it should encrypt the value
-	key := gcmcrypt.KeyFromString(setting.Secret)
-
-	signedID, err := gcmcrypt.Encrypt(key, session.ID)
-	if err != nil {
-		return err
-	}
-
-	session.SignedID = signedID
-
-	write(w, setting, session)
 
 	return nil
 }
 
-func get(r *http.Request, name string) (string, error) {
+func writeSigned(w http.ResponseWriter, setting *Setting, unsignedValue string) error {
+
+	signedValue, err := gcmcrypt.Encrypt(setting.Secret, unsignedValue)
+	if err != nil {
+		return err
+	}
+
+	write(w, setting, signedValue)
+
+	return nil
+}
+
+func get(r *http.Request, name string, signed bool) (string, error) {
 	cookie, err := r.Cookie(name)
 	if err != nil {
 		return "", err
 	}
 
 	return cookie.Value, nil
+}
+
+func getSigned(r *http.Request, name string, key [16]byte) (string, error) {
+	//Explicitly set signed=true(3rd arg). See method name
+	signedValue, err := get(r, name, true)
+	if err != nil {
+		return "", err
+	}
+
+	unsignedValue, err := gcmcrypt.Decrypt(key, signedValue)
+	if err != nil {
+		return "", err
+	}
+
+	return unsignedValue, nil
 }
