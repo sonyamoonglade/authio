@@ -12,7 +12,7 @@ import (
 var (
 	DefaultLabel     = "default"
 	DefaultName      = "SESSION_ID"
-	DefaultExpiresAt = time.Now().Add(time.Hour * 1)
+	DefaultExpiresAt = time.Hour * 1
 )
 
 var DefaultSetting = &Setting{
@@ -40,7 +40,15 @@ type Setting struct {
 	HttpOnly bool
 	Secure   bool
 	SameSite http.SameSite
-	Expires  time.Time
+	Expires  time.Duration
+}
+
+func Write(w http.ResponseWriter, setting *Setting, unsignedValue string) error {
+	return writeSigned(w, setting, unsignedValue)
+}
+
+func Get(r *http.Request, name string, key [16]byte) (string, error) {
+	return getSigned(r, name, key)
 }
 
 func write(w http.ResponseWriter, setting *Setting, cookieValue string) error {
@@ -59,7 +67,7 @@ func write(w http.ResponseWriter, setting *Setting, cookieValue string) error {
 		Value:    cookieValue,
 		Path:     setting.Path,
 		Domain:   setting.Domain,
-		Expires:  setting.Expires,
+		Expires:  time.Now().Add(setting.Expires),
 		Secure:   setting.Secure,
 		HttpOnly: setting.HttpOnly,
 		SameSite: setting.SameSite,

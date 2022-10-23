@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sonyamoonglade/authio/gcmcrypt"
@@ -167,7 +168,7 @@ func newRequestWithDefaultCookie(cookieValue string) *http.Request {
 		Value:    hash.SHA1(cookieValue), //important!! With DefaultSetting cookie value is not signed but hashed
 		Path:     "",
 		Domain:   "",
-		Expires:  DefaultExpiresAt,
+		Expires:  time.Now().Add(DefaultExpiresAt),
 		Secure:   false,
 		HttpOnly: true,
 		SameSite: DefaultSetting.SameSite,
@@ -182,7 +183,7 @@ func newRequestWithCustomCookie(cookieValue string, setting *Setting) *http.Requ
 		Value:    cookieValue,
 		Path:     setting.Path,
 		Domain:   setting.Domain,
-		Expires:  setting.Expires,
+		Expires:  time.Now().Add(DefaultExpiresAt),
 		Secure:   setting.Secure,
 		HttpOnly: setting.HttpOnly,
 		SameSite: setting.SameSite,

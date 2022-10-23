@@ -4,17 +4,34 @@ import (
 	"github.com/google/uuid"
 )
 
-type AuthSession struct {
-	ID       string
-	SignedID string
-	Value    SessionValue
+const (
+	CtxKey = "session"
+)
+
+//todo: implement more
+type SessionValueConstraint interface {
+	int64 | string
 }
 
-func NewAuthSession(v SessionValue) *AuthSession {
-	UUID := uuid.NewString()
+type AuthSession struct {
+	ID    string
+	Value SessionValue
+}
+
+func NewFromCookie(ID string, v SessionValue) *AuthSession {
 	return &AuthSession{
-		ID:       UUID,
-		SignedID: UUID,
-		Value:    v,
+		ID:    ID,
+		Value: v,
 	}
+}
+
+func New(v SessionValue) *AuthSession {
+	return &AuthSession{
+		ID:    uuid.NewString(),
+		Value: v,
+	}
+}
+
+func (a *AuthSession) Raw() interface{} {
+	return a.Value.Raw()
 }
