@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sonyamoonglade/authio/cookies"
 	"github.com/sonyamoonglade/authio/gcmcrypt"
-	"github.com/sonyamoonglade/authio/hash"
 	"github.com/sonyamoonglade/authio/session"
 	"github.com/sonyamoonglade/authio/store"
 	"github.com/stretchr/testify/require"
@@ -122,20 +121,6 @@ func newDefaultAuth(pf store.ParseFromStoreFunc) *Auth {
 		Build()
 }
 
-func newRequestWithDefaultCookie(cookieValue string) *http.Request {
-	req := httptest.NewRequest(http.MethodGet, "http://cool-url.com", nil)
-	req.AddCookie(&http.Cookie{
-		Name:     cookies.DefaultSetting.Name,
-		Value:    hash.SHA1(cookieValue), //important!! With DefaultSetting cookie value is not signed but hashed
-		Path:     "",
-		Domain:   "",
-		Expires:  time.Now().Add(cookies.DefaultExpiresAt),
-		Secure:   false,
-		HttpOnly: true,
-		SameSite: cookies.DefaultSetting.SameSite,
-	})
-	return req
-}
 func newRequestWithCustomCookie(cookieValue string, setting *cookies.Setting) *http.Request {
 	req := httptest.NewRequest(http.MethodGet, "http://cool-url.com", nil)
 	req.AddCookie(&http.Cookie{

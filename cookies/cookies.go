@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/sonyamoonglade/authio/gcmcrypt"
-	"github.com/sonyamoonglade/authio/hash"
 )
 
 var (
@@ -55,11 +54,6 @@ func write(w http.ResponseWriter, setting *Setting, cookieValue string) error {
 
 	if len(cookieValue) > 2<<11 { //4096
 		return ErrCookieTooLong
-	}
-
-	//Hash the value if cookie is not signed
-	if setting.Signed == false {
-		cookieValue = hash.SHA1(cookieValue)
 	}
 
 	http.SetCookie(w, &http.Cookie{

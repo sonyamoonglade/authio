@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sonyamoonglade/authio/gcmcrypt"
-	"github.com/sonyamoonglade/authio/hash"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,7 +33,7 @@ func TestShouldWriteCookie(t *testing.T) {
 
 			//With default setting cookie is not signed but hashed,
 			//Thus should compare two hashes
-			require.True(t, hash.Compare(c.Value, mockID)) // see cookies.write
+			require.Equal(t, mockID, c.Value) // see cookies.write
 
 			require.Equal(t, DefaultSetting.HttpOnly, c.HttpOnly)
 			require.Equal(t, DefaultSetting.Secure, c.Secure)
@@ -115,8 +114,7 @@ func TestShouldGetCookie(t *testing.T) {
 	//With default setting set signed=false (see cookies.DefaultSetting)
 	cookieValue, err := get(req, DefaultSetting.Name, false)
 	require.NoError(t, err)
-
-	require.True(t, hash.Compare(cookieValue, mockID))
+	require.Equal(t, mockID, cookieValue)
 }
 
 func TestShouldNotGetCookieByInvalidKey(t *testing.T) {
@@ -127,7 +125,7 @@ func TestShouldNotGetCookieByInvalidKey(t *testing.T) {
 	//See newRequestWithDefaultCookie (cookie.Name)
 	cookieValue, err := get(req, "some-invalid-key", false)
 	require.Error(t, err)
-	require.Equal(t, "", cookieValue)
+	require.Zero(t, cookieValue)
 	require.Equal(t, http.ErrNoCookie, err)
 }
 
@@ -165,7 +163,7 @@ func newRequestWithDefaultCookie(cookieValue string) *http.Request {
 	req := httptest.NewRequest(http.MethodGet, "http://cool-url.com", nil)
 	req.AddCookie(&http.Cookie{
 		Name:     DefaultSetting.Name,
-		Value:    hash.SHA1(cookieValue), //important!! With DefaultSetting cookie value is not signed but hashed
+		Value:    cookieValue, //important!! With DefaultSetting cookie value is not signed but hashed
 		Path:     "",
 		Domain:   "",
 		Expires:  time.Now().Add(DefaultExpiresAt),
