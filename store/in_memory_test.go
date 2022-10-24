@@ -44,13 +44,14 @@ func TestGetNoEntry(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	store := newStore()
-	ID := uuid.NewString()
 
-	err := store.Save(ID, session.FromString("random-value"))
+	store := newStore()
+	au := session.New(session.FromString("random-value"))
+
+	err := store.Save(au)
 	require.NoError(t, err)
 
-	sv, err := store.Get(ID)
+	sv, err := store.Get(au.ID)
 	require.NoError(t, err)
 
 	require.Equal(t, "random-value", sv.String())
@@ -60,15 +61,15 @@ func TestSave(t *testing.T) {
 func TestDelete(t *testing.T) {
 
 	store := newStore()
-	ID := uuid.NewString()
+	au := session.New(session.FromString("random-value"))
 
-	err := store.Save(ID, session.FromString("random-value"))
+	err := store.Save(au)
 	require.NoError(t, err)
 
-	err = store.Delete(ID)
+	err = store.Delete(au.ID)
 	require.NoError(t, err)
 
-	sv, err := store.Get(ID)
+	sv, err := store.Get(au.ID)
 	require.Error(t, err)
 	require.Equal(t, ErrNoEntry, err)
 

@@ -21,7 +21,7 @@ const (
 )
 
 type Store interface {
-	Save(ID string, v session.SessionValue) error
+	Save(session *session.AuthSession) error
 	Delete(ID string) error
 	Get(ID string) (session.SessionValue, error)
 }

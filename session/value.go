@@ -19,6 +19,7 @@ func (i Int64SessionValue) Raw() interface{} {
 	return int64(i)
 }
 
+//TODO: ValueFromInt64... rename
 func FromInt64(i int64) SessionValue {
 	return Int64SessionValue(i)
 }

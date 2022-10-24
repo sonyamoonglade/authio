@@ -25,12 +25,12 @@ func NewInMemoryStore(cfg *Config, inMemoryCfg *InMemoryConfig) *InMemoryStore {
 	}
 }
 
-func (i *InMemoryStore) Save(ID string, v session.SessionValue) error {
+func (i *InMemoryStore) Save(au *session.AuthSession) error {
 	if i.currItems == i.maxItems {
 		panic("LRU!!")
 	}
 
-	i.data[ID] = v.String()
+	i.data[au.ID] = au.Value.String()
 	i.currItems += 1
 	return nil
 }

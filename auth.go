@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrSettingExist = errors.New("setting already exists")
+	ErrNoSetting = errors.New("setting does not exist")
 )
 
 type Auth struct {
@@ -45,6 +45,27 @@ func newAuth(logger Logger,
 	return au
 }
 
+func (au *Auth) SaveSession(w http.ResponseWriter, settingLabel string, sv session.SessionValue) error {
+
+	setting, ok := au.settings[settingLabel]
+	if !ok {
+		return ErrNoSetting
+	}
+
+	authSession := session.New(sv)
+	err := au.store.Save(authSession)
+	if err != nil {
+		return fmt.Errorf("could not save to store: %w", err)
+	}
+
+	err = cookies.Write(w, setting, authSession.ID)
+	if err != nil {
+		return fmt.Errorf("could not write a cookie: %w", err)
+	}
+
+	return nil
+}
+
 func (au *Auth) HTTPGetSessionWithLabel(h http.HandlerFunc, settingLabel string) http.HandlerFunc {
 
 	setting, ok := au.settings[settingLabel]
@@ -56,23 +77,24 @@ func (au *Auth) HTTPGetSessionWithLabel(h http.HandlerFunc, settingLabel string)
 		unsignedID, err := cookies.Get(r, setting.Name, setting.Secret)
 		if err != nil {
 			//authErrors.WithError(err)
-			panic(err)
+			http.Error(w, "test", http.StatusUnauthorized)
+			return
 		}
 
 		sessionValue, err := au.store.Get(unsignedID)
 		if err != nil {
-			//handle err...
-			panic(err)
+			http.Error(w, "test", http.StatusForbidden)
+			return
 		}
 		//Can set explicit true because if it was not valid then
 		//cookies.GetSigned would've returned an error
 		session := session.NewFromCookie(unsignedID, sessionValue)
 
-		h.ServeHTTP(w, r.WithContext(au.enrichContext(r, session)))
+		h.ServeHTTP(w, r.WithContext(au.enrichContext(r.Context(), session)))
 		return
 	}
 }
 
-func (au *Auth) enrichContext(r *http.Request, s *session.AuthSession) context.Context {
-	return context.WithValue(r.Context(), session.CtxKey, s)
+func (au *Auth) enrichContext(requestCtx context.Context, s *session.AuthSession) context.Context {
+	return context.WithValue(requestCtx, session.CtxKey, s)
 }

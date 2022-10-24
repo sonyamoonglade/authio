@@ -1,6 +1,7 @@
 package authio
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -90,14 +91,18 @@ func TestMiddlewareWithLabelShouldFillContext(t *testing.T) {
 	require.NoError(t, err)
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-
-		ctx := r.Context()
-
 		//Specify int64 as mockUserID
-		userID, ok := ValueFromContext[int64](ctx)
+		userID, ok := ValueFromContext[int64](r.Context())
 		require.True(t, ok)
 		require.Equal(t, mockUserID, userID)
 
+		//use userID like in real handler...
+		//...
+		//...
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Hello-world!"))
+		return
 	}
 
 	m := auth.HTTPGetSessionWithLabel(handler, "signed-cookie-label") // init middleware with settings by label
@@ -106,6 +111,11 @@ func TestMiddlewareWithLabelShouldFillContext(t *testing.T) {
 
 	m.ServeHTTP(w, r)
 
+	b, err := io.ReadAll(w.Result().Body)
+	require.NoError(t, err)
+
+	require.Equal(t, w.Result().StatusCode, http.StatusOK)
+	require.Equal(t, string(b), "Hello-world!")
 }
 
 func newDefaultAuth(pf store.ParseFromStoreFunc) *Auth {

@@ -32,52 +32,60 @@ var (
 type Setting struct {
 	Label    string
 	Name     string
-	Path     string
-	Domain   string
+	Path     string //optional
+	Domain   string //optional
 	Secret   [16]byte
-	Signed   bool
+	Signed   bool //optional (for now not...)
 	HttpOnly bool
 	Secure   bool
 	SameSite http.SameSite
 	Expires  time.Duration
 }
 
-func Write(w http.ResponseWriter, setting *Setting, unsignedValue string) error {
-	return writeSigned(w, setting, unsignedValue)
+func Write(w http.ResponseWriter, setting *Setting, sessionID string) error {
+	return writeSigned(w, setting, sessionID)
 }
 
 func Get(r *http.Request, name string, key [16]byte) (string, error) {
 	return getSigned(r, name, key)
 }
 
-func write(w http.ResponseWriter, setting *Setting, cookieValue string) error {
-
-	if len(cookieValue) > 2<<11 { //4096
+//sessionID is what's written in the cookie
+func write(w http.ResponseWriter, setting *Setting, sessionID string) error {
+	if len(sessionID) > 2<<11 { //4096
 		return ErrCookieTooLong
 	}
 
-	http.SetCookie(w, &http.Cookie{
+	c := &http.Cookie{
 		Name:     setting.Name,
-		Value:    cookieValue,
-		Path:     setting.Path,
-		Domain:   setting.Domain,
+		Value:    sessionID,
 		Expires:  time.Now().Add(setting.Expires),
 		Secure:   setting.Secure,
 		HttpOnly: setting.HttpOnly,
 		SameSite: setting.SameSite,
-	})
+	}
+
+	if setting.Path != "" {
+		c.Path = setting.Path
+	}
+
+	if setting.Domain != "" {
+		c.Domain = setting.Domain
+	}
+
+	http.SetCookie(w, c)
 
 	return nil
 }
 
-func writeSigned(w http.ResponseWriter, setting *Setting, unsignedValue string) error {
+func writeSigned(w http.ResponseWriter, setting *Setting, sessionID string) error {
 
-	signedValue, err := gcmcrypt.Encrypt(setting.Secret, unsignedValue)
+	signedID, err := gcmcrypt.Encrypt(setting.Secret, sessionID)
 	if err != nil {
 		return err
 	}
 
-	write(w, setting, signedValue)
+	write(w, setting, signedID)
 
 	return nil
 }
