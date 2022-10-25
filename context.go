@@ -25,3 +25,8 @@ func ValueFromContext[T session.SessionValueConstraint](ctx context.Context) (T,
 
 	return casted, true
 }
+
+func SessionFromContext(ctx context.Context) *session.AuthSession {
+	authSession, _ := getFromCtx(ctx)
+	return authSession
+}

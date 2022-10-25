@@ -40,14 +40,29 @@ func main() {
 		}, &store.InMemoryConfig{
 			MaxItems: 100,
 		})).
+		UseAuthioConfig(&authio.AuthioConfig{
+			Paths: struct{ OnAuthNotRequired string }{
+				OnAuthNotRequired: "/home", //your homepage
+			},
+		}).
 		Build()
 
 	handler := new(MyHandler)
 	handler.auth = auth
 
-	authRequired := auth.HTTPGetSessionWithLabel //change for wrapped handler
-	http.HandleFunc("/protected", authRequired(handler.greeting, MyLabel))
-	http.HandleFunc("/register", handler.register)
+	// this factory will make middlewares based on *MyLabel* setting
+	authRequired := auth.AuthRequired(MyLabel)
+
+	//someOtherSettingAuthRequired := auth.AuthRequired(MyVerySecureLabel)
+	//...
+
+	// this factory will redirect users if they try to reach auth-unprotected endpoit while being authed.
+	redirectAuthed := auth.RedirectAuthed(MyLabel)
+
+	http.HandleFunc("/home", handler.home)
+	http.HandleFunc("/register", redirectAuthed(handler.register))
+	http.HandleFunc("/protected", authRequired(handler.greeting))
+	http.HandleFunc("/logout", authRequired(handler.logout))
 
 	fmt.Println("running at :8000")
 	log.Fatal(http.ListenAndServe(":8000", nil))
@@ -60,6 +75,10 @@ type User struct {
 
 type MyHandler struct {
 	auth *authio.Auth
+}
+
+func (h *MyHandler) home(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "hello darling!")
 }
 
 func (h *MyHandler) greeting(w http.ResponseWriter, r *http.Request) {
@@ -97,4 +116,26 @@ func (h *MyHandler) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	return
+}
+
+func (h *MyHandler) logout(w http.ResponseWriter, r *http.Request) {
+
+	authSession := authio.SessionFromContext(r.Context())
+
+	//if you need to get a session value that's asosiated with authSession
+	//method 1:
+	userID, ok := authio.ValueFromContext[int64](r.Context())
+	if !ok {
+		panic("internal error!!")
+	}
+
+	//method 2:
+	userID = authSession.Raw().(int64) //same as authSession.Value.Raw().(int64)
+
+	fmt.Printf("user %d is logging out...\n", userID)
+
+	//This will remove a cookie and value inside an auth.store
+	h.auth.InvalidateSession(w, MyLabel, authSession.ID)
+
+	fmt.Fprintf(w, "goodbye, user %d!\n", userID)
 }

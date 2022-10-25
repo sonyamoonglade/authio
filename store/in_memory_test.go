@@ -1,6 +1,7 @@
 package store
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -74,6 +75,55 @@ func TestDelete(t *testing.T) {
 	require.Equal(t, ErrNoEntry, err)
 
 	require.Nil(t, sv)
+}
+
+func TestConcurrentRW(t *testing.T) {
+
+	sessions := make([]*session.AuthSession, 100, 100)
+	for i := 0; i < 100; i++ {
+		sessions[i] = session.New(session.FromString(uuid.NewString()))
+	}
+
+	wg := new(sync.WaitGroup)
+	store := newStore()
+
+	wg.Add(3)
+	//writer
+	go func() {
+		var err error
+		for _, s := range sessions {
+			err = store.Save(s)
+			require.NoError(t, err)
+		}
+
+		defer wg.Done()
+	}()
+
+	//reader
+	go func() {
+		//readers
+		for i := 0; i < 5; i++ {
+			go func() {
+				for _, s := range sessions {
+					store.Get(s.ID)
+				}
+			}()
+		}
+
+		defer wg.Done()
+	}()
+
+	//deleter
+	go func() {
+		for _, s := range sessions {
+			store.Delete(s.ID)
+		}
+
+		defer wg.Done()
+	}()
+
+	wg.Wait()
+
 }
 
 func newStore() *InMemoryStore {

@@ -15,6 +15,9 @@ const (
 	keyLen   = 16
 )
 
+//KeyFromString goes char-by-char and generates a []byte key
+//If len(str) > keyLen - extra characters will be ommited.
+//Otherwise, if len(str) < keyLen - remaining characters will be just ""(empty str)
 func KeyFromString(s string) [keyLen]byte {
 	var key [keyLen]byte
 	for i, ch := range s {

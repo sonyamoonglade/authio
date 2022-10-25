@@ -6,10 +6,11 @@ import (
 )
 
 type AuthBuilder struct {
-	logger   Logger
-	store    store.Store
-	settings map[string]*cookies.Setting
-	pf       store.ParseFromStoreFunc
+	logger       Logger
+	store        store.Store
+	settings     map[string]*cookies.Setting
+	pf           store.ParseFromStoreFunc
+	authioConfig *AuthioConfig
 }
 
 func NewAuthBuilder() *AuthBuilder {
@@ -36,7 +37,12 @@ func (b *AuthBuilder) UseLogger(logger Logger) *AuthBuilder {
 	return b
 }
 
+func (b *AuthBuilder) UseAuthioConfig(authioConfig *AuthioConfig) *AuthBuilder {
+	b.authioConfig = authioConfig
+	return b
+}
+
 func (b *AuthBuilder) Build() *Auth {
 
-	return newAuth(b.logger, b.store, b.settings)
+	return newAuth(b.authioConfig, b.logger, b.store, b.settings)
 }

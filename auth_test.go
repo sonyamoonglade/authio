@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/sonyamoonglade/authio/cookies"
 	"github.com/sonyamoonglade/authio/gcmcrypt"
 	"github.com/sonyamoonglade/authio/session"
@@ -78,16 +77,15 @@ func TestMiddlewareWithLabelShouldFillContext(t *testing.T) {
 	cookieSetting := newSignedSessionSetting()
 	auth.settings["signed-cookie-label"] = cookieSetting //save cookie setting config by label
 
-	mockID := uuid.NewString()
-
+	authSession := session.New(session.FromInt64(mockUserID))
 	//Now encrypt mockID as if it was done by register/login endpoint and set to cookie
-	encryptedID, err := gcmcrypt.Encrypt(cookieSetting.Secret, mockID)
+	encryptedID, err := gcmcrypt.Encrypt(cookieSetting.Secret, authSession.ID)
 	require.NoError(t, err)
 
 	//Create request with encrypted cookie
 	r := newRequestWithCustomCookie(encryptedID, cookieSetting)
 
-	err = auth.store.Save(mockID, session.FromInt64(mockUserID)) //immitate that session has been already created beforehand...
+	err = auth.store.Save(authSession) //immitate that session has been already created beforehand...
 	require.NoError(t, err)
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +103,7 @@ func TestMiddlewareWithLabelShouldFillContext(t *testing.T) {
 		return
 	}
 
-	m := auth.HTTPGetSessionWithLabel(handler, "signed-cookie-label") // init middleware with settings by label
+	m := auth.newAuthRequiredWithSetting(handler, "signed-cookie-label") // init middleware with settings by label
 
 	w := httptest.NewRecorder()
 
@@ -138,7 +136,7 @@ func newRequestWithCustomCookie(cookieValue string, setting *cookies.Setting) *h
 		Value:    cookieValue,
 		Path:     setting.Path,
 		Domain:   setting.Domain,
-		Expires:  time.Now().Add(cookies.DefaultExpiresAt),
+		Expires:  time.Now().Add(cookies.DefaultSetting.Expires),
 		Secure:   setting.Secure,
 		HttpOnly: setting.HttpOnly,
 		SameSite: setting.SameSite,

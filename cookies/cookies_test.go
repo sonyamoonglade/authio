@@ -1,6 +1,7 @@
 package cookies
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -80,10 +81,10 @@ func TestShouldWriteSignedCookie(t *testing.T) {
 		Label:    "my-label",
 		Signed:   true,
 		Secret:   gcmcrypt.KeyFromString("my-ultra-mega-cool-secret-gcc"),
-		Name:     DefaultName,
+		Name:     DefaultSetting.Name,
 		Path:     "",
 		Domain:   "",
-		Expires:  DefaultExpiresAt,
+		Expires:  DefaultSetting.Expires,
 		Secure:   false,
 		HttpOnly: true,
 		SameSite: DefaultSetting.SameSite,
@@ -111,7 +112,6 @@ func TestShouldGetCookie(t *testing.T) {
 	mockID := uuid.NewString()
 	req := newRequestWithDefaultCookie(mockID)
 
-	//With default setting set signed=false (see cookies.DefaultSetting)
 	cookieValue, err := get(req, DefaultSetting.Name, false)
 	require.NoError(t, err)
 	require.Equal(t, mockID, cookieValue)
@@ -125,7 +125,7 @@ func TestShouldNotGetCookieByInvalidKey(t *testing.T) {
 	//See newRequestWithDefaultCookie (cookie.Name)
 	cookieValue, err := get(req, "some-invalid-key", false)
 	require.Error(t, err)
-	require.Zero(t, cookieValue)
+	require.Equal(t, "", cookieValue)
 	require.Equal(t, http.ErrNoCookie, err)
 }
 
@@ -140,7 +140,7 @@ func TestShouldGetAndUnsignCookieValue(t *testing.T) {
 		Secret:   gcmcrypt.KeyFromString("ajadfkjsadfkasdkfjkasfjdskfj23984124789247"),
 		Secure:   false,
 		SameSite: DefaultSetting.SameSite,
-		Expires:  DefaultExpiresAt,
+		Expires:  DefaultSetting.Expires,
 		Path:     "",
 		Domain:   "",
 		Name:     "SESSION_ID_SIGNED",
@@ -159,6 +159,30 @@ func TestShouldGetAndUnsignCookieValue(t *testing.T) {
 
 }
 
+func TestShouldDeleteCookie(t *testing.T) {
+
+	mockID := uuid.NewString()
+	w := httptest.NewRecorder()
+	write(w, DefaultSetting, mockID)
+
+	deleteCookie(w, DefaultSetting)
+
+	res := w.Result()
+	cookies := res.Cookies()
+
+	var sessionCookieCount int
+	for _, c := range cookies {
+		if c.Name == DefaultSetting.Name {
+			sessionCookieCount += 1
+		}
+		fmt.Printf("%v\n", c)
+	}
+
+	//1st - original session cookie
+	//2nd - same cookie but with zero value and -1 MaxAge (browsers will remove 1st cookie)
+	require.Equal(t, 2, sessionCookieCount)
+}
+
 func newRequestWithDefaultCookie(cookieValue string) *http.Request {
 	req := httptest.NewRequest(http.MethodGet, "http://cool-url.com", nil)
 	req.AddCookie(&http.Cookie{
@@ -166,7 +190,7 @@ func newRequestWithDefaultCookie(cookieValue string) *http.Request {
 		Value:    cookieValue, //important!! With DefaultSetting cookie value is not signed but hashed
 		Path:     "",
 		Domain:   "",
-		Expires:  time.Now().Add(DefaultExpiresAt),
+		Expires:  time.Now().Add(DefaultSetting.Expires),
 		Secure:   false,
 		HttpOnly: true,
 		SameSite: DefaultSetting.SameSite,
@@ -181,7 +205,7 @@ func newRequestWithCustomCookie(cookieValue string, setting *Setting) *http.Requ
 		Value:    cookieValue,
 		Path:     setting.Path,
 		Domain:   setting.Domain,
-		Expires:  time.Now().Add(DefaultExpiresAt),
+		Expires:  time.Now().Add(DefaultSetting.Expires),
 		Secure:   setting.Secure,
 		HttpOnly: setting.HttpOnly,
 		SameSite: setting.SameSite,
