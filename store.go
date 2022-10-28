@@ -1,11 +1,9 @@
-package store
+package authio
 
 import (
 	"errors"
 	"strconv"
 	"time"
-
-	"github.com/sonyamoonglade/authio/session"
 )
 
 var (
@@ -16,14 +14,13 @@ type OverflowStrategy int
 
 const (
 	LRU OverflowStrategy = iota
-	LFU
-	RANDOM
 )
 
 type Store interface {
-	Save(session *session.AuthSession) error
+	Save(session *AuthSession) error
 	Delete(ID string) error
-	Get(ID string) (session.SessionValue, error)
+	Get(ID string) (SessionValue, error)
+	GetSessionIDByValue(v SessionValue) (string, error)
 }
 
 type Config struct {
@@ -32,17 +29,17 @@ type Config struct {
 	ParseFunc        ParseFromStoreFunc
 }
 
-type ParseFromStoreFunc func(v string) (session.SessionValue, error)
+type ParseFromStoreFunc func(v string) (SessionValue, error)
 
-func ToInt64(v string) (session.SessionValue, error) {
+func ToInt64(v string) (SessionValue, error) {
 	parsed, err := strconv.ParseInt(v, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
-	return session.FromInt64(parsed), nil
+	return NewValueFromInt64(parsed), nil
 }
 
-func ToString(v string) (session.SessionValue, error) {
-	return session.FromString(v), nil
+func ToString(v string) (SessionValue, error) {
+	return NewValueFromString(v), nil
 }

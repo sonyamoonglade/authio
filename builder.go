@@ -1,15 +1,10 @@
 package authio
 
-import (
-	"github.com/sonyamoonglade/authio/cookies"
-	"github.com/sonyamoonglade/authio/store"
-)
-
 type AuthBuilder struct {
 	logger       Logger
-	store        store.Store
-	settings     map[string]*cookies.Setting
-	pf           store.ParseFromStoreFunc
+	store        Store
+	settings     map[string]*Setting
+	pf           ParseFromStoreFunc
 	authioConfig *AuthioConfig
 }
 
@@ -17,17 +12,17 @@ func NewAuthBuilder() *AuthBuilder {
 	return &AuthBuilder{
 		logger:   nil,
 		store:    nil,
-		settings: make(map[string]*cookies.Setting),
+		settings: make(map[string]*Setting),
 		pf:       nil,
 	}
 }
 
-func (b *AuthBuilder) AddCookieSetting(setting *cookies.Setting) *AuthBuilder {
+func (b *AuthBuilder) AddCookieSetting(setting *Setting) *AuthBuilder {
 	b.settings[setting.Label] = setting
 	return b
 }
 
-func (b *AuthBuilder) UseStore(store store.Store) *AuthBuilder {
+func (b *AuthBuilder) UseStore(store Store) *AuthBuilder {
 	b.store = store
 	return b
 }

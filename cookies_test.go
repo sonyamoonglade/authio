@@ -1,4 +1,4 @@
-package cookies
+package authio
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/sonyamoonglade/authio/gcmcrypt"
+	"github.com/sonyamoonglade/authio/internal/gcmcrypt"
 	"github.com/stretchr/testify/require"
 )
 

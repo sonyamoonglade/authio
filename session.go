@@ -1,4 +1,4 @@
-package session
+package authio
 
 import (
 	"github.com/google/uuid"

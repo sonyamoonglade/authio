@@ -1,11 +1,11 @@
-package cookies
+package authio
 
 import (
 	"errors"
 	"net/http"
 	"time"
 
-	"github.com/sonyamoonglade/authio/gcmcrypt"
+	"github.com/sonyamoonglade/authio/internal/gcmcrypt"
 )
 
 var (

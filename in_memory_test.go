@@ -1,4 +1,4 @@
-package store
+package authio
 
 import (
 	"sync"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/sonyamoonglade/authio/session"
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,6 +32,24 @@ func TestGet(t *testing.T) {
 
 }
 
+func TestGetSessionIDByValue(t *testing.T) {
+
+	store := newStore()
+
+	randomUserID := uuid.NewString()
+	sv := NewValueFromString(randomUserID)
+
+	authSession := New(sv)
+
+	err := store.Save(authSession)
+	require.NoError(t, err)
+
+	returnedAuthSessionID, err := store.GetSessionIDByValue(sv)
+	require.NoError(t, err)
+
+	require.Equal(t, authSession.ID, returnedAuthSessionID)
+}
+
 func TestGetNoEntry(t *testing.T) {
 	store := newStore()
 
@@ -47,7 +64,7 @@ func TestGetNoEntry(t *testing.T) {
 func TestSave(t *testing.T) {
 
 	store := newStore()
-	au := session.New(session.FromString("random-value"))
+	au := New(NewValueFromString("random-value"))
 
 	err := store.Save(au)
 	require.NoError(t, err)
@@ -62,7 +79,7 @@ func TestSave(t *testing.T) {
 func TestDelete(t *testing.T) {
 
 	store := newStore()
-	au := session.New(session.FromString("random-value"))
+	au := New(NewValueFromString("random-value"))
 
 	err := store.Save(au)
 	require.NoError(t, err)
@@ -79,9 +96,9 @@ func TestDelete(t *testing.T) {
 
 func TestConcurrentRW(t *testing.T) {
 
-	sessions := make([]*session.AuthSession, 100, 100)
+	sessions := make([]*AuthSession, 100, 100)
 	for i := 0; i < 100; i++ {
-		sessions[i] = session.New(session.FromString(uuid.NewString()))
+		sessions[i] = New(NewValueFromString(uuid.NewString()))
 	}
 
 	wg := new(sync.WaitGroup)

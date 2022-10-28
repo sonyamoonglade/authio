@@ -2,16 +2,14 @@ package authio
 
 import (
 	"context"
-
-	"github.com/sonyamoonglade/authio/session"
 )
 
-func getFromCtx(ctx context.Context) (*session.AuthSession, bool) {
-	v, ok := ctx.Value(session.CtxKey).(*session.AuthSession)
+func getFromCtx(ctx context.Context) (*AuthSession, bool) {
+	v, ok := ctx.Value(CtxKey).(*AuthSession)
 	return v, ok
 }
 
-func ValueFromContext[T session.SessionValueConstraint](ctx context.Context) (T, bool) {
+func ValueFromContext[T SessionValueConstraint](ctx context.Context) (T, bool) {
 	authSession, ok := getFromCtx(ctx)
 
 	if ok == false {
@@ -26,7 +24,7 @@ func ValueFromContext[T session.SessionValueConstraint](ctx context.Context) (T,
 	return casted, true
 }
 
-func SessionFromContext(ctx context.Context) *session.AuthSession {
+func SessionFromContext(ctx context.Context) *AuthSession {
 	authSession, _ := getFromCtx(ctx)
 	return authSession
 }

@@ -45,7 +45,7 @@ func (l *DefaultLogger) Debugf(msg string, args ...interface{}) {
 		return
 	}
 	addCaret(&msg)
-	l.printf(debugPrefix, msg, args)
+	l.printf(debugPrefix, msg, args...)
 }
 
 func (l *DefaultLogger) Infof(msg string, args ...interface{}) {
@@ -53,7 +53,7 @@ func (l *DefaultLogger) Infof(msg string, args ...interface{}) {
 		return
 	}
 	addCaret(&msg)
-	l.printf(infoPrefix, msg, args)
+	l.printf(infoPrefix, msg, args...)
 }
 
 func (l *DefaultLogger) Warnf(msg string, args ...interface{}) {
@@ -61,12 +61,12 @@ func (l *DefaultLogger) Warnf(msg string, args ...interface{}) {
 		return
 	}
 	addCaret(&msg)
-	l.printf(warnPrefix, msg, args)
+	l.printf(warnPrefix, msg, args...)
 }
 
 func (l *DefaultLogger) Errorf(msg string, args ...interface{}) {
 	addCaret(&msg)
-	l.printf(errorPrefix, msg, args)
+	l.printf(errorPrefix, msg, args...)
 }
 
 func addCaret(msg *string) *string {
@@ -78,5 +78,5 @@ func addCaret(msg *string) *string {
 
 func (l *DefaultLogger) printf(prefix string, msg string, args ...interface{}) {
 	msg = prefix + msg
-	l.logger.Printf(msg, args)
+	l.logger.Printf(msg, args...)
 }

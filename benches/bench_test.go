@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/sonyamoonglade/authio/gcmcrypt"
-	"github.com/sonyamoonglade/authio/hash"
+	"github.com/sonyamoonglade/authio/internal/gcmcrypt"
+	"github.com/sonyamoonglade/authio/internal/hash"
 )
 
 func BenchmarkSign(b *testing.B) {

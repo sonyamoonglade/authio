@@ -12,6 +12,7 @@ func (au *Auth) AuthRequired(settingLabel string) AuthioMiddlewareFactory {
 	}
 }
 
+//TODO: accept array of labels and check for every setting
 func (au *Auth) RedirectAuthed(settingLabel string) AuthioMiddlewareFactory {
 	return func(h http.HandlerFunc) http.HandlerFunc {
 		return au.newRedirectAuthed(h, settingLabel)

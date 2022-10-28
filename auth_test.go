@@ -7,10 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sonyamoonglade/authio/cookies"
-	"github.com/sonyamoonglade/authio/gcmcrypt"
-	"github.com/sonyamoonglade/authio/session"
-	"github.com/sonyamoonglade/authio/store"
+	"github.com/sonyamoonglade/authio/internal/gcmcrypt"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -21,13 +18,13 @@ func TestCanBuildAuth(t *testing.T) {
 	logger := lg.Sugar()
 
 	auth := NewAuthBuilder().
-		AddCookieSetting(cookies.DefaultSetting).
+		AddCookieSetting(DefaultSetting).
 		UseLogger(logger).
-		UseStore(store.NewInMemoryStore(&store.Config{
+		UseStore(NewInMemoryStore(&Config{
 			EntryTTL:         time.Hour * 24,
-			OverflowStrategy: store.LRU,
-			ParseFunc:        store.ToInt64,
-		}, &store.InMemoryConfig{
+			OverflowStrategy: LRU,
+			ParseFunc:        ToInt64,
+		}, &InMemoryConfig{
 			MaxItems: int64(100),
 		})).
 		Build()
@@ -36,7 +33,7 @@ func TestCanBuildAuth(t *testing.T) {
 	require.NotNil(t, auth.settings)
 	require.NotNil(t, auth.logger)
 	require.NotNil(t, auth.store)
-	require.NotNil(t, auth.settings[cookies.DefaultLabel])
+	require.NotNil(t, auth.settings[DefaultLabel])
 
 	require.Nil(t, auth.settings["jo-mama"])
 }
@@ -45,11 +42,11 @@ func TestCanBuildWithDefaultLogger(t *testing.T) {
 
 	auth := NewAuthBuilder().
 		UseLogger(nil). // <---
-		UseStore(store.NewInMemoryStore(&store.Config{
+		UseStore(NewInMemoryStore(&Config{
 			EntryTTL:         time.Hour * 24,
-			OverflowStrategy: store.LRU,
-			ParseFunc:        store.ToInt64,
-		}, &store.InMemoryConfig{
+			OverflowStrategy: LRU,
+			ParseFunc:        ToInt64,
+		}, &InMemoryConfig{
 			MaxItems: int64(100),
 		})).
 		Build()
@@ -70,14 +67,14 @@ func TestCantBuildWithoutStore(t *testing.T) {
 
 func TestMiddlewareWithLabelShouldFillContext(t *testing.T) {
 
-	auth := newDefaultAuth(store.ToInt64)
+	auth := newDefaultAuth(ToInt64)
 
 	var mockUserID int64 = 542 //random user_id
 
 	cookieSetting := newSignedSessionSetting()
 	auth.settings["signed-cookie-label"] = cookieSetting //save cookie setting config by label
 
-	authSession := session.New(session.FromInt64(mockUserID))
+	authSession := New(NewValueFromInt64(mockUserID))
 	//Now encrypt mockID as if it was done by register/login endpoint and set to cookie
 	encryptedID, err := gcmcrypt.Encrypt(cookieSetting.Secret, authSession.ID)
 	require.NoError(t, err)
@@ -116,37 +113,21 @@ func TestMiddlewareWithLabelShouldFillContext(t *testing.T) {
 	require.Equal(t, string(b), "Hello-world!")
 }
 
-func newDefaultAuth(pf store.ParseFromStoreFunc) *Auth {
+func newDefaultAuth(pf ParseFromStoreFunc) *Auth {
 	return NewAuthBuilder().
 		UseLogger(nil).
-		UseStore(store.NewInMemoryStore(&store.Config{
+		UseStore(NewInMemoryStore(&Config{
 			EntryTTL:         time.Hour * 24,
-			OverflowStrategy: store.LRU,
+			OverflowStrategy: LRU,
 			ParseFunc:        pf,
-		}, &store.InMemoryConfig{
+		}, &InMemoryConfig{
 			MaxItems: int64(100),
 		})).
 		Build()
 }
 
-func newRequestWithCustomCookie(cookieValue string, setting *cookies.Setting) *http.Request {
-	req := httptest.NewRequest(http.MethodGet, "http://cool-url.com", nil)
-	req.AddCookie(&http.Cookie{
-		Name:     setting.Name,
-		Value:    cookieValue,
-		Path:     setting.Path,
-		Domain:   setting.Domain,
-		Expires:  time.Now().Add(cookies.DefaultSetting.Expires),
-		Secure:   setting.Secure,
-		HttpOnly: setting.HttpOnly,
-		SameSite: setting.SameSite,
-	})
-
-	return req
-}
-
-func newSignedSessionSetting() *cookies.Setting {
-	return &cookies.Setting{
+func newSignedSessionSetting() *Setting {
+	return &Setting{
 		Label:    "signed-cookie-label",
 		Name:     "signed-name",
 		Path:     "",
